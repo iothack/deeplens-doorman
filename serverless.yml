@@ -1,0 +1,55 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: deeplens-doorman
+
+provider:
+  name: aws
+  runtime: python3.7
+
+  # you can overwrite defaults here
+  stage: demo
+
+  region: ap-northeast-1
+
+  # you can add statements to the Lambda function's IAM Role here
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+        - "s3:PutObjectAcl"
+        - "s3:GetObject"
+        - "s3:DeleteObject"
+      Resource:
+        - "arn:aws:s3:::${env:BUCKET_NAME}/*"
+
+  # you can define service wide environment variables here
+  environment:
+    AWSREGION: ${env:AWSREGION}
+    BUCKET_NAME: ${env:BUCKET_NAME}
+
+functions:
+  # find person, function for greengrass device
+  find-person:
+    handler: find-person.function_handler
+
+# resources:
+#   Resources:
+#     S3BucketDoormanfaces:
+#       Type: AWS::S3::Bucket
+#       Properties:
+#         BucketName: ${env:BUCKET_NAME}
+#         # add additional custom bucket configuration here
+#
+plugins:
+  - serverless-python-requirements
