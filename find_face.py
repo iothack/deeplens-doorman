@@ -5,8 +5,7 @@ import json
 import numpy as np
 import awscam
 import cv2
-
-# import greengrasssdk
+import greengrasssdk
 import datetime
 from botocore.session import Session
 
@@ -84,8 +83,8 @@ def infinite_infer_run():
         model_type = "ssd"
         output_map = {1: "face"}
         # Create an IoT client for sending to messages to the cloud.
-        # client = greengrasssdk.client("iot-data")
-        # iot_topic = "$aws/things/{}/infer".format(os.environ["AWS_IOT_THING_NAME"])
+        client = greengrasssdk.client("iot-data")
+        iot_topic = "$aws/things/{}/infer".format(os.environ["AWS_IOT_THING_NAME"])
         # Create a local display instance that will dump the image bytes to a FIFO
         # file that the image can be rendered locally.
         local_display = LocalDisplay("480p")
@@ -94,9 +93,9 @@ def infinite_infer_run():
         # path is required.
         model_path = "/opt/awscam/artifacts/mxnet_deploy_ssd_FP16_FUSED.xml"
         # Load the model onto the GPU.
-        # client.publish(topic=iot_topic, payload="Loading face detection model")
+        client.publish(topic=iot_topic, payload="Loading face detection model")
         model = awscam.Model(model_path, {"GPU": 1})
-        # client.publish(topic=iot_topic, payload="Face detection model loaded")
+        client.publish(topic=iot_topic, payload="Face detection model loaded")
         # Set the threshold for detection
         detection_threshold = 0.25
         # The height and width of the training set images
@@ -152,10 +151,10 @@ def infinite_infer_run():
                             print(res.json())
                     except Exception as ex:
                         print("Error", ex)
-                        # client.publish(
-                        #     topic=iot_topic,
-                        #     payload="Error in s3 put lambda: {}".format(ex),
-                        # )
+                        client.publish(
+                            topic=iot_topic,
+                            payload="Error in s3 put lambda: {}".format(ex),
+                        )
 
                     # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
                     # for more information about the cv2.rectangle method.
@@ -181,12 +180,12 @@ def infinite_infer_run():
             # Set the next frame in the local display stream.
             local_display.set_frame_data(frame)
             # Send results to the cloud
-            # client.publish(topic=iot_topic, payload=json.dumps(cloud_output))
+            client.publish(topic=iot_topic, payload=json.dumps(cloud_output))
     except Exception as ex:
         print("Error", ex)
-        # client.publish(
-        #     topic=iot_topic, payload="Error in face detection lambda: {}".format(ex)
-        # )
+        client.publish(
+            topic=iot_topic, payload="Error in face detection lambda: {}".format(ex)
+        )
 
 
 infinite_infer_run()
