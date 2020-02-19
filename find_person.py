@@ -1,5 +1,5 @@
-""" A sample lambda for object detection"""
-from threading import Thread, Timer, Event
+""" A sample lambda for face detection"""
+from threading import Thread, Event
 import os
 import json
 import numpy as np
@@ -65,7 +65,7 @@ class LocalDisplay(Thread):
     def set_frame_data(self, frame):
         """ Method updates the image data. This currently encodes the
             numpy array to jpg but can be modified to support other encodings.
-            frame - Numpy array containing the image data of the next frame
+            frame - Numpy array containing the image data tof the next frame
                     in the project stream.
         """
         ret, jpeg = cv2.imencode(".jpg", cv2.resize(frame, self.resolution))
@@ -80,32 +80,9 @@ class LocalDisplay(Thread):
 def infinite_infer_run():
     """ Entry point of the lambda function"""
     try:
-        # This object detection model is implemented as single shot detector (ssd), since
-        # the number of labels is small we create a dictionary that will help us convert
-        # the machine labels to human readable labels.
+        # This face detection model is implemented as single shot detector (ssd).
         model_type = "ssd"
-        output_map = {
-            1: "aeroplane",
-            2: "bicycle",
-            3: "bird",
-            4: "boat",
-            5: "bottle",
-            6: "bus",
-            7: "car",
-            8: "cat",
-            9: "chair",
-            10: "cow",
-            11: "dinning table",
-            12: "dog",
-            13: "horse",
-            14: "motorbike",
-            15: "person",
-            16: "pottedplant",
-            17: "sheep",
-            18: "sofa",
-            19: "train",
-            20: "tvmonitor",
-        }
+        output_map = {1: "face"}
         # Create an IoT client for sending to messages to the cloud.
         # client = greengrasssdk.client("iot-data")
         # iot_topic = "$aws/things/{}/infer".format(os.environ["AWS_IOT_THING_NAME"])
@@ -115,13 +92,11 @@ def infinite_infer_run():
         local_display.start()
         # The sample projects come with optimized artifacts, hence only the artifact
         # path is required.
-        model_path = (
-            "/opt/awscam/artifacts/mxnet_deploy_ssd_resnet50_300_FP16_FUSED.xml"
-        )
+        model_path = "/opt/awscam/artifacts/mxnet_deploy_ssd_FP16_FUSED.xml"
         # Load the model onto the GPU.
-        # client.publish(topic=iot_topic, payload="Loading object detection model")
+        # client.publish(topic=iot_topic, payload="Loading face detection model")
         model = awscam.Model(model_path, {"GPU": 1})
-        # client.publish(topic=iot_topic, payload="Object detection model loaded")
+        # client.publish(topic=iot_topic, payload="Face detection model loaded")
         # Set the threshold for detection
         detection_threshold = 0.25
         # The height and width of the training set images
@@ -148,7 +123,7 @@ def infinite_infer_run():
             xscale = float(frame.shape[1]) / float(input_width)
             # Dictionary to be filled with labels and probabilities for MQTT
             cloud_output = {}
-            # Get the detected objects and probabilities
+            # Get the detected faces and probabilities
             for obj in parsed_inference_results[model_type]:
                 if obj["prob"] > detection_threshold:
                     # Add bounding boxes to full resolution frame
@@ -158,8 +133,7 @@ def infinite_infer_run():
                     ymax = int(yscale * obj["ymax"])
 
                     try:
-                        # if a person was found, upload the target area to S3 for further inspection
-                        if output_map[obj["label"]] == "person" and obj["prob"] > 0.9:
+                        if obj["prob"] > 0.8:
                             # get the person image
                             person = frame[ymin:ymax, xmin:xmax]
                             # create a s3 file key
@@ -195,9 +169,7 @@ def infinite_infer_run():
                     # and tickness
                     cv2.putText(
                         frame,
-                        "{}: {:.2f}%".format(
-                            output_map[obj["label"]], obj["prob"] * 100
-                        ),
+                        "{:.2f}%".format(obj["prob"] * 100),
                         (xmin, ymin - text_offset),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         2.5,
@@ -213,11 +185,8 @@ def infinite_infer_run():
     except Exception as ex:
         print("Error", ex)
         # client.publish(
-        #     topic=iot_topic, payload="Error in object detection lambda: {}".format(ex)
+        #     topic=iot_topic, payload="Error in face detection lambda: {}".format(ex)
         # )
-
-    # Asynchronously schedule this function to be run again in 15 seconds.
-    Timer(15, infinite_infer_run).start()
 
 
 infinite_infer_run()
