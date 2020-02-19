@@ -13,9 +13,9 @@ from threading import Timer
 # Setup the S3 client
 session = Session()
 s3 = session.create_client("s3")
-# s3_bucket = "deeplens-doorman-demo"
-# s3_bucket = os.environ["BUCKET_NAME"]
-s3_bucket = os.environ.get("BUCKET_NAME", "deeplens-doorman-demo")
+# bucket_name = "deeplens-doorman-demo"
+# bucket_name = os.environ["BUCKET_NAME"]
+bucket_name = os.environ.get("BUCKET_NAME", "deeplens-doorman-demo")
 
 # Create an AWS Greengrass core SDK client.
 client = greengrasssdk.client("iot-data")
@@ -125,36 +125,34 @@ def greengrass_infinite_infer_run():
                     )
                     ymax = int(yscale * obj["ymax"])
 
-                    # if a person was found, upload the target area to S3 for further inspection
-                    if outMap[obj["label"]] == "person":
-                        # get the person image
-                        person = frame[ymin:ymax, xmin:xmax]
+                    try:
+                        # if a person was found, upload the target area to S3 for further inspection
+                        if outMap[obj["label"]] == "person":
+                            # get the person image
+                            person = frame[ymin:ymax, xmin:xmax]
 
-                        # create a s3 file key
-                        s3_key = (
-                            datetime.datetime.utcnow().strftime("%Y-%m-%d_%H_%M_%S.%f")
-                            + ".jpg"
-                        )
-                        encode_param = [
-                            int(cv2.IMWRITE_JPEG_QUALITY),
-                            90,
-                        ]  # 90% should be more than enough
-                        _, jpg_data = cv2.imencode(".jpg", person, encode_param)
-                        filename = (
-                            "incoming/%s" % s3_key
-                        )  # the guess lambda function is listening here
-                        res = s3.put_object(
-                            ACL="public-read",
-                            Body=jpg_data.tostring(),
-                            Bucket=s3_bucket,
-                            Key=filename,
-                        )
-                        print(res.json())
+                            # create a s3 file key
+                            filename = (
+                                datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S.%f")
+                                + ".jpg"
+                            )
+                            _, jpg_data = cv2.imencode(".jpg", person)
+
+                            key = "incoming/{}".format(filename)
+                            res = s3.put_object(
+                                ACL="public-read",
+                                Body=jpg_data.tostring(),
+                                Bucket=bucket_name,
+                                Key=key,
+                            )
+                            print(res.json())
+                    except Exception as ex:
+                        print("Error", ex)
 
                     # draw a rectangle around the designated area, and tell what label was found
                     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 165, 20), 4)
                     label += '"{}": {:.2f},'.format(outMap[obj["label"]], obj["prob"])
-                    label_show = "{}:    {:.2f}%".format(
+                    label_show = "{}: {:.2f}%".format(
                         outMap[obj["label"]], obj["prob"] * 100
                     )
                     cv2.putText(
