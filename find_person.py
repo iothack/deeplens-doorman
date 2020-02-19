@@ -1,17 +1,12 @@
-# *****************************************************
-#                                                    *
-# Copyright 2018 Amazon.com, Inc. or its affiliates. *
-# All Rights Reserved.                               *
-#                                                    *
-# *****************************************************
 """ A sample lambda for object detection"""
-from threading import Thread, Event
+from threading import Thread, Timer, Event
 import os
 import json
 import numpy as np
 import awscam
 import cv2
-import greengrasssdk
+
+# import greengrasssdk
 import datetime
 from botocore.session import Session
 
@@ -112,8 +107,8 @@ def infinite_infer_run():
             20: "tvmonitor",
         }
         # Create an IoT client for sending to messages to the cloud.
-        client = greengrasssdk.client("iot-data")
-        iot_topic = "$aws/things/{}/infer".format(os.environ["AWS_IOT_THING_NAME"])
+        # client = greengrasssdk.client("iot-data")
+        # iot_topic = "$aws/things/{}/infer".format(os.environ["AWS_IOT_THING_NAME"])
         # Create a local display instance that will dump the image bytes to a FIFO
         # file that the image can be rendered locally.
         local_display = LocalDisplay("480p")
@@ -124,9 +119,9 @@ def infinite_infer_run():
             "/opt/awscam/artifacts/mxnet_deploy_ssd_resnet50_300_FP16_FUSED.xml"
         )
         # Load the model onto the GPU.
-        client.publish(topic=iot_topic, payload="Loading object detection model")
+        # client.publish(topic=iot_topic, payload="Loading object detection model")
         model = awscam.Model(model_path, {"GPU": 1})
-        client.publish(topic=iot_topic, payload="Object detection model loaded")
+        # client.publish(topic=iot_topic, payload="Object detection model loaded")
         # Set the threshold for detection
         detection_threshold = 0.25
         # The height and width of the training set images
@@ -210,11 +205,15 @@ def infinite_infer_run():
             # Set the next frame in the local display stream.
             local_display.set_frame_data(frame)
             # Send results to the cloud
-            client.publish(topic=iot_topic, payload=json.dumps(cloud_output))
+            # client.publish(topic=iot_topic, payload=json.dumps(cloud_output))
     except Exception as ex:
-        client.publish(
-            topic=iot_topic, payload="Error in object detection lambda: {}".format(ex)
-        )
+        print("Error", ex)
+        # client.publish(
+        #     topic=iot_topic, payload="Error in object detection lambda: {}".format(ex)
+        # )
+
+    # Asynchronously schedule this function to be run again in 15 seconds.
+    Timer(15, infinite_infer_run).start()
 
 
 infinite_infer_run()
