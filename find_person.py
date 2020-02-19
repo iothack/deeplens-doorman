@@ -178,6 +178,10 @@ def infinite_infer_run():
                             print(res.json())
                     except Exception as ex:
                         print("Error", ex)
+                        # client.publish(
+                        #     topic=iot_topic,
+                        #     payload="Error in s3 put lambda: {}".format(ex),
+                        # )
 
                     # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
                     # for more information about the cv2.rectangle method.
