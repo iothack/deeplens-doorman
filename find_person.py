@@ -13,9 +13,9 @@ from threading import Timer
 # Setup the S3 client
 session = Session()
 s3 = session.create_client("s3")
-# s3_bucket = "deeplens-doorman-mzc-tokyo"
+# s3_bucket = "deeplens-doorman-demo"
 # s3_bucket = os.environ["BUCKET_NAME"]
-s3_bucket = os.environ.get("BUCKET_NAME", "deeplens-doorman-mzc-tokyo")
+s3_bucket = os.environ.get("BUCKET_NAME", "deeplens-doorman-demo")
 
 # Create an AWS Greengrass core SDK client.
 client = greengrasssdk.client("iot-data")
