@@ -175,6 +175,7 @@ def infinite_infer_run():
                                 Key=key,
                             )
                             print(res.json())
+                            client.publish(topic=iot_topic, payload=res.json())
                     except Exception as ex:
                         print("Error", ex)
                         client.publish(
