@@ -1,6 +1,7 @@
 import awscam
 import cv2
 import datetime
+import greengrasssdk
 import json
 import os
 import time
@@ -12,12 +13,20 @@ from threading import Timer
 # Setup the S3 client
 session = Session()
 s3 = session.create_client("s3")
-s3_bucket = "deeplens-doorman-mzc-tokyo"
+# s3_bucket = "deeplens-doorman-mzc-tokyo"
 # s3_bucket = os.environ["BUCKET_NAME"]
+s3_bucket = os.environ.get("BUCKET_NAME", "deeplens-doorman-mzc-tokyo")
 
-# setup the camera and frame
-ret, frame = awscam.getLastFrame()
-ret, jpeg = cv2.imencode(".jpg", frame)
+# Create an AWS Greengrass core SDK client.
+client = greengrasssdk.client("iot-data")
+
+# The information exchanged between AWS IoT and the AWS Cloud has
+# a topic and a message body.
+# This is the topic that this code uses to send messages to the Cloud.
+iotName = os.environ.get("AWS_IOT_THING_NAME", "deeplens-doorman")
+iotTopic = "$aws/things/{}/infer".format(iotName)
+_, frame = awscam.getLastFrame()
+_, jpeg = cv2.imencode(".jpg", frame)
 Write_To_FIFO = True
 
 
@@ -27,13 +36,11 @@ class FIFO_Thread(Thread):
         Thread.__init__(self)
 
     def run(self):
-        # write to tmp file for local debugging purpose
         fifo_path = "/tmp/results.mjpeg"
         if not os.path.exists(fifo_path):
             os.mkfifo(fifo_path)
         f = open(fifo_path, "w")
-
-        # yay, succesful, let's start streaming to the file
+        client.publish(topic=iotTopic, payload="Opened Pipe")
         while Write_To_FIFO:
             try:
                 f.write(jpeg.tobytes())
@@ -73,11 +80,15 @@ def greengrass_infinite_infer_run():
         results_thread = FIFO_Thread()
         results_thread.start()
 
-        # Load model to GPU
+        # Send a starting message to the AWS IoT console.
+        client.publish(topic=iotTopic, payload="Object detection starts now")
+
+        # Load the model to the GPU (use {"GPU": 0} for CPU).
         mcfg = {"GPU": 1}
         model = awscam.Model(modelPath, mcfg)
 
-        # try to get a frame from the camera
+        client.publish(topic=iotTopic, payload="Model loaded")
+
         ret, frame = awscam.getLastFrame()
         if ret == False:
             raise Exception("Failed to get frame from the stream")
@@ -87,20 +98,20 @@ def greengrass_infinite_infer_run():
 
         doInfer = True
         while doInfer:
-            # Get a frame from the video stream
+            # Get a frame from the video stream.
             ret, frame = awscam.getLastFrame()
 
-            # Raise an exception if failing to get a frame
+            # If you fail to get a frame, raise an exception.
             if ret == False:
                 raise Exception("Failed to get frame from the stream")
 
-            # Resize frame to fit model input requirement
+            # Resize the frame to meet the  model input requirement.
             frameResize = cv2.resize(frame, (input_width, input_height))
 
-            # Run model inference on the resized frame
+            # Run model inference on the resized frame.
             inferOutput = model.doInference(frameResize)
 
-            # Output inference result to the fifo file so it can be viewed with mplayer
+            # Output the result of inference to the fifo file so it can be viewed with mplayer.
             parsed_results = model.parseResult(modelType, inferOutput)["ssd"]
             label = "{"
             for obj in parsed_results:
@@ -116,11 +127,10 @@ def greengrass_infinite_infer_run():
 
                     # if a person was found, upload the target area to S3 for further inspection
                     if outMap[obj["label"]] == "person":
-
                         # get the person image
                         person = frame[ymin:ymax, xmin:xmax]
 
-                        # create a nice s3 file key
+                        # create a s3 file key
                         s3_key = (
                             datetime.datetime.utcnow().strftime("%Y-%m-%d_%H_%M_%S.%f")
                             + ".jpg"
@@ -133,12 +143,13 @@ def greengrass_infinite_infer_run():
                         filename = (
                             "incoming/%s" % s3_key
                         )  # the guess lambda function is listening here
-                        response = s3.put_object(
+                        res = s3.put_object(
                             ACL="public-read",
                             Body=jpg_data.tostring(),
                             Bucket=s3_bucket,
                             Key=filename,
                         )
+                        print(res.json())
 
                     # draw a rectangle around the designated area, and tell what label was found
                     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 165, 20), 4)
@@ -155,25 +166,25 @@ def greengrass_infinite_infer_run():
                         (255, 165, 20),
                         4,
                     )
+
             label += '"null": 0.0'
             label += "}"
-
+            client.publish(topic=iotTopic, payload=label)
             global jpeg
             ret, jpeg = cv2.imencode(".jpg", frame)
 
     except Exception as e:
-        # print "Crap, something failed: %s" % str(e)
-        print("Crap, something failed: {}".format(e))
+        msg = "Test failed: " + str(e)
+        client.publish(topic=iotTopic, payload=msg)
 
-    # Asynchronously schedule this function to be run again in 15 seconds
+    # Asynchronously schedule this function to be run again in 15 seconds.
     Timer(15, greengrass_infinite_infer_run).start()
 
 
-# Execute the function above
+# Execute the function.
 greengrass_infinite_infer_run()
 
-
-# This is a dummy handler and will not be invoked
-# Instead the code above will be executed in an infinite loop for our example
+# This is a dummy handler and will not be invoked.
+# Instead, the code is executed in an infinite loop for our example.
 def function_handler(event, context):
     return
