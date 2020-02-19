@@ -34,7 +34,9 @@ provider:
     BUCKET_NAME: ${env:BUCKET_NAME}
 
 functions:
-  # find person, function for greengrass device
+  # find face, function for greengrass device
+  find-face:
+    handler: find_face.function_handler
   find-person:
     handler: find_person.function_handler
 
