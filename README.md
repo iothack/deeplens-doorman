@@ -8,7 +8,7 @@
 
 ## 슬랙 설정
 
-[Slack App](./README-slack.md)
+[Slack App](./README-slack.md) 을 참고하여 Slack App 을 생성 합니다.
 
 ## 환경 변수
 
