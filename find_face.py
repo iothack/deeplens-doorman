@@ -148,8 +148,8 @@ def infinite_infer_run():
                                 Bucket=bucket_name,
                                 Key=key,
                             )
-                            print(res.json())
-                            client.publish(topic=iot_topic, payload=res.json())
+                            print(res)
+                            client.publish(topic=iot_topic, payload=res)
                     except Exception as ex:
                         print("Error", ex)
                         client.publish(

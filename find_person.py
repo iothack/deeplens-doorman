@@ -158,7 +158,7 @@ def infinite_infer_run():
 
                     try:
                         # if a person was found, upload the target area to S3 for further inspection
-                        if output_map[obj["label"]] == "person" and obj["prob"] > 0.9:
+                        if output_map[obj["label"]] == "person" and obj["prob"] > 0.8:
                             # get the person image
                             person = frame[ymin:ymax, xmin:xmax]
                             # create a s3 file key
@@ -174,8 +174,8 @@ def infinite_infer_run():
                                 Bucket=bucket_name,
                                 Key=key,
                             )
-                            print(res.json())
-                            client.publish(topic=iot_topic, payload=res.json())
+                            print(res)
+                            client.publish(topic=iot_topic, payload=res)
                     except Exception as ex:
                         print("Error", ex)
                         client.publish(
