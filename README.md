@@ -12,9 +12,6 @@
 
 ## 환경 변수
 
-서울 리전에는 딥렌즈가 없으므로 제일 가까운 도쿄 리전을 선택 했습니다.
-딥렌즈에서 사진을 업로드 할 버켓을 설정 합니다.
-
 ```bash
 export AWSREGION="ap-northeast-1"
 export BUCKET_NAME="deeplens-doorman-demo"
@@ -26,20 +23,40 @@ export REKOGNITION_COLLECTION_ID="doorman"
 rekognition collection 을 생성 합니다.
 
 ```bash
-# aws s3 mb s3://${BUCKET_NAME} --region ${AWSREGION}
-
 aws rekognition create-collection --collection-id $REKOGNITION_COLLECTION_ID --region $AWSREGION
-# aws rekognition delete-collection --collection-id $REKOGNITION_COLLECTION_ID --region $AWSREGION
 ```
 
 # 개발 환경 설정
 
-```bash
-# pip install pyenv
-# pyenv install 3.7.6
-pyenv shell 3.7.6
+serverless-python-requirements 가 `pyenv` 를 필요로 하므로 설정 합니다.
 
-# brew install serverless
-# sls plugin install -n serverless-python-requirements
+```bash
+pip install pyenv
+
+pyenv install 3.7.6
+
+pyenv shell 3.7.6
+```
+
+`serverless` 와 `serverless-python-requirements` 플러그인을 설치 합니다.
+
+```bash
+brew install serverless
+
+sls plugin install -n serverless-python-requirements
+```
+
+## 배포
+
+```bash
 sls deploy
 ```
+
+## AWS IAM Role
+
+role/service-role/AWSDeepLensGreengrassGroupRole <- AmazonS3FullAccess
+
+role/service-role/AWSDeepLensLambdaRole <- AmazonS3FullAccess
+
+role/deeplens-doorman-demo-ap-northeast-1-lambdaRole <- AWSGreengrassResourceAccessRolePolicy
+role/deeplens-doorman-demo-ap-northeast-1-lambdaRole <- AWSDeepLensLambdaFunctionAccessPolicy
