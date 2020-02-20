@@ -8,6 +8,8 @@
 
 ## 슬랙 설정
 
+[Slack App](./README-slack.md)
+
 ## 환경 변수
 
 서울 리전에는 딥렌즈가 없으므로 제일 가까운 도쿄 리전을 선택 했습니다.
@@ -30,12 +32,14 @@ aws rekognition create-collection --collection-id $REKOGNITION_COLLECTION_ID --r
 # aws rekognition delete-collection --collection-id $REKOGNITION_COLLECTION_ID --region $AWSREGION
 ```
 
-# 개발 환경 및 배포 환경 설정
+# 개발 환경 설정
 
 ```bash
 # pip install pyenv
 # pyenv install 3.7.6
 pyenv shell 3.7.6
-sls plugin install -n serverless-python-requirements
+
+# brew install serverless
+# sls plugin install -n serverless-python-requirements
 sls deploy
 ```
