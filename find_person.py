@@ -122,7 +122,7 @@ def infinite_infer_run():
         model = awscam.Model(model_path, {"GPU": 1})
         client.publish(topic=iot_topic, payload="Object detection model loaded")
         # Set the threshold for detection
-        detection_threshold = 0.25
+        detection_threshold = 0.5
         # The height and width of the training set images
         input_height = 300
         input_width = 300
@@ -149,40 +149,15 @@ def infinite_infer_run():
             cloud_output = {}
             # Get the detected objects and probabilities
             for obj in parsed_inference_results[model_type]:
-                if obj["prob"] > detection_threshold:
+                if (
+                    obj["prob"] > detection_threshold
+                    and output_map[obj["label"]] == "person"
+                ):
                     # Add bounding boxes to full resolution frame
                     xmin = int(xscale * obj["xmin"])
                     ymin = int(yscale * obj["ymin"])
                     xmax = int(xscale * obj["xmax"])
                     ymax = int(yscale * obj["ymax"])
-
-                    try:
-                        # if a person was found, upload the target area to S3 for further inspection
-                        if output_map[obj["label"]] == "person" and obj["prob"] > 0.8:
-                            # get the person image
-                            person = frame[ymin:ymax, xmin:xmax]
-                            # create a s3 file key
-                            filename = (
-                                datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S.%f")
-                                + ".jpg"
-                            )
-                            _, jpg_data = cv2.imencode(".jpg", person)
-                            key = "incoming/{}".format(filename)
-                            res = s3.put_object(
-                                ACL="public-read",
-                                Body=jpg_data.tostring(),
-                                Bucket=bucket_name,
-                                Key=key,
-                            )
-                            print(res)
-                            client.publish(topic=iot_topic, payload=res)
-                    except Exception as ex:
-                        print("Error", ex)
-                        client.publish(
-                            topic=iot_topic,
-                            payload="Error in s3 put lambda: {}".format(ex),
-                        )
-
                     # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
                     # for more information about the cv2.rectangle method.
                     # Method signature: image, point1, point2, color, and tickness.
@@ -206,6 +181,33 @@ def infinite_infer_run():
                     )
                     # Store label and probability to send to cloud
                     cloud_output[output_map[obj["label"]]] = obj["prob"]
+
+                    try:
+                        # if a person was found, upload the target area to S3 for further inspection
+                        # get the person image
+                        person = frame[ymin:ymax, xmin:xmax]
+                        # create a s3 file key
+                        filename = (
+                            datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S.%f")
+                            + ".jpg"
+                        )
+                        _, jpg_data = cv2.imencode(".jpg", person)
+                        key = "incoming/{}".format(filename)
+                        res = s3.put_object(
+                            ACL="public-read",
+                            Body=jpg_data.tostring(),
+                            Bucket=bucket_name,
+                            Key=key,
+                        )
+                        print(res)
+                        client.publish(topic=iot_topic, payload=res)
+                    except Exception as ex:
+                        print("Error", ex)
+                        client.publish(
+                            topic=iot_topic,
+                            payload="Error in s3 put lambda: {}".format(ex),
+                        )
+
             # Set the next frame in the local display stream.
             local_display.set_frame_data(frame)
             # Send results to the cloud
