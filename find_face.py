@@ -135,7 +135,7 @@ def infinite_infer_run():
                     # Method signature: image, point1, point2, color, and tickness.
                     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 165, 20), 10)
                     # Amount to offset the label/probability text above the bounding box.
-                    text_offset = 15
+                    # text_offset = 15
                     # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
                     # for more information about the cv2.putText method.
                     # Method signature: image, text, origin, font face, font scale, color,
@@ -143,7 +143,7 @@ def infinite_infer_run():
                     cv2.putText(
                         frame,
                         "{:.2f}%".format(obj["prob"] * 100),
-                        (xmin, ymin - text_offset),
+                        (xmin + 5, ymin + 5),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         2.5,
                         (255, 165, 20),
