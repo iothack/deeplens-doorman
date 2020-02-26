@@ -133,7 +133,7 @@ def infinite_infer_run():
                     # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
                     # for more information about the cv2.rectangle method.
                     # Method signature: image, point1, point2, color, and tickness.
-                    cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 165, 20), 10)
+                    cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 165, 20), 5)
                     # Amount to offset the label/probability text above the bounding box.
                     # text_offset = 15
                     # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
@@ -147,7 +147,7 @@ def infinite_infer_run():
                         cv2.FONT_HERSHEY_SIMPLEX,
                         2.5,
                         (255, 165, 20),
-                        6,
+                        5,
                     )
                     # Store label and probability to send to cloud
                     cloud_output[output_map[obj["label"]]] = obj["prob"]
