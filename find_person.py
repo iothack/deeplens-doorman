@@ -159,13 +159,13 @@ def infinite_infer_run():
                     xmax = int(xscale * obj["xmax"])
                     ymax = int(yscale * obj["ymax"])
 
-                    yadd = int((ymax - ymin) * 0.1)
-                    ymin = max(0, ymin - yadd)
-                    ymax = min(frame.shape[0], ymax + yadd)
+                    # yadd = int((ymax - ymin) * 0.1)
+                    # ymin = max(0, ymin - yadd)
+                    # ymax = min(frame.shape[0], ymax + yadd)
 
-                    xadd = int((xmax - xmin) * 0.1)
-                    xmin = max(0, xmin - xadd)
-                    xmax = min(frame.shape[1], xmax + xadd)
+                    # xadd = int((xmax - xmin) * 0.1)
+                    # xmin = max(0, xmin - xadd)
+                    # xmax = min(frame.shape[1], xmax + xadd)
 
                     try:
                         # if a person was found, upload the target area to S3 for further inspection
