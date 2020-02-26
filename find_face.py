@@ -130,27 +130,14 @@ def infinite_infer_run():
                     ymin = int(yscale * obj["ymin"])
                     xmax = int(xscale * obj["xmax"])
                     ymax = int(yscale * obj["ymax"])
-                    # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
-                    # for more information about the cv2.rectangle method.
-                    # Method signature: image, point1, point2, color, and tickness.
-                    cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 165, 20), 5)
-                    # Amount to offset the label/probability text above the bounding box.
-                    # text_offset = 15
-                    # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
-                    # for more information about the cv2.putText method.
-                    # Method signature: image, text, origin, font face, font scale, color,
-                    # and tickness
-                    cv2.putText(
-                        frame,
-                        "{:.2f}%".format(obj["prob"] * 100),
-                        (xmin + 5, ymin + 5),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        2.5,
-                        (255, 165, 20),
-                        5,
-                    )
-                    # Store label and probability to send to cloud
-                    cloud_output[output_map[obj["label"]]] = obj["prob"]
+
+                    yadd = int((ymax - ymin) * 0.1)
+                    ymin = max(0, ymin - yadd)
+                    ymax = min(frame.shape[0], ymax + yadd)
+
+                    xadd = int((xmax - xmin) * 0.1)
+                    xmin = max(0, xmin - xadd)
+                    xmax = min(frame.shape[0], xmax + xadd)
 
                     try:
                         # get the person image
@@ -176,6 +163,28 @@ def infinite_infer_run():
                             topic=iot_topic,
                             payload="Error in s3 put lambda: {}".format(ex),
                         )
+
+                    # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
+                    # for more information about the cv2.rectangle method.
+                    # Method signature: image, point1, point2, color, and tickness.
+                    cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (255, 165, 20), 5)
+                    # Amount to offset the label/probability text above the bounding box.
+                    # text_offset = 15
+                    # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
+                    # for more information about the cv2.putText method.
+                    # Method signature: image, text, origin, font face, font scale, color,
+                    # and tickness
+                    cv2.putText(
+                        frame,
+                        "{:.2f}%".format(obj["prob"] * 100),
+                        (xmin + 5, ymin + 5),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        2.5,
+                        (255, 165, 20),
+                        5,
+                    )
+                    # Store label and probability to send to cloud
+                    cloud_output[output_map[obj["label"]]] = obj["prob"]
 
             # Set the next frame in the local display stream.
             local_display.set_frame_data(frame)
