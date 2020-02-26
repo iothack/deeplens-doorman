@@ -23,12 +23,12 @@ provider:
       Action:
         - "s3:*"
       Resource:
-        - "arn:aws:s3:::${env:BUCKET_NAME}/*"
+        - "arn:aws:s3:::${env:STORAGE_NAME}/*"
 
   # you can define service wide environment variables here
   environment:
     AWSREGION: ${env:AWSREGION}
-    BUCKET_NAME: ${env:BUCKET_NAME}
+    STORAGE_NAME: ${env:STORAGE_NAME}
 
 functions:
   # find face, function for greengrass device

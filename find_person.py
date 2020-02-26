@@ -12,7 +12,7 @@ from botocore.session import Session
 # Setup the S3 client
 session = Session()
 s3 = session.create_client("s3")
-bucket_name = os.environ.get("BUCKET_NAME", "deeplens-doorman-demo")
+storage_name = os.environ.get("STORAGE_NAME", "deeplens-doorman-demo")
 
 
 class LocalDisplay(Thread):
@@ -196,7 +196,7 @@ def infinite_infer_run():
                         res = s3.put_object(
                             ACL="public-read",
                             Body=jpg_data.tostring(),
-                            Bucket=bucket_name,
+                            Bucket=storage_name,
                             Key=key,
                         )
                         print(res)
