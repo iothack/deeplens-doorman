@@ -137,7 +137,7 @@ def infinite_infer_run():
 
                     xadd = int((xmax - xmin) * 0.1)
                     xmin = max(0, xmin - xadd)
-                    xmax = min(frame.shape[0], xmax + xadd)
+                    xmax = min(frame.shape[1], xmax + xadd)
 
                     try:
                         # get the person image
