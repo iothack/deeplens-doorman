@@ -56,6 +56,7 @@ sls deploy
 role/service-role/AWSDeepLensGreengrassGroupRole <- AmazonS3FullAccess
 
 role/service-role/AWSDeepLensLambdaRole <- AmazonS3FullAccess
+role/service-role/AWSDeepLensLambdaRole <- AWSGreengrassResourceAccessRolePolicy
 
 role/deeplens-doorman-demo-ap-northeast-1-lambdaRole <- AWSGreengrassResourceAccessRolePolicy
 role/deeplens-doorman-demo-ap-northeast-1-lambdaRole <- AWSDeepLensLambdaFunctionAccessPolicy
