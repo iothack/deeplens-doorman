@@ -30,7 +30,7 @@ aws rekognition create-collection --collection-id $STORAGE_NAME --region $AWSREG
 serverless-python-requirements 가 `pyenv` 를 필요로 하므로 설정 합니다.
 
 ```bash
-pip install pyenv
+pip3 install pyenv
 
 pyenv install 3.7.6
 
