@@ -1,13 +1,14 @@
-""" A sample lambda for face detection"""
-from threading import Thread, Event
-import os
-import json
-import numpy as np
+""" A sample lambda for object detection"""
 import awscam
 import cv2
-import greengrasssdk
 import datetime
+import greengrasssdk
+import json
+import numpy as np
+import os
+
 from botocore.session import Session
+from threading import Thread, Event
 
 # Setup the S3 client
 session = Session()
@@ -130,24 +131,16 @@ def infinite_infer_run():
                     ymin = int(yscale * obj["ymin"])
                     xmax = int(xscale * obj["xmax"])
                     ymax = int(yscale * obj["ymax"])
-
-                    # yadd = int((ymax - ymin) * 0.1)
-                    # ymin = max(0, ymin - yadd)
-                    # ymax = min(frame.shape[0], ymax + yadd)
-
-                    # xadd = int((xmax - xmin) * 0.1)
-                    # xmin = max(0, xmin - xadd)
-                    # xmax = min(frame.shape[1], xmax + xadd)
-
+                    # if a face was found, upload the target area to S3 for further inspection
+                    # get the face image
                     try:
-                        # get the person image
-                        person = frame[ymin:ymax, xmin:xmax]
+                        face = frame[ymin:ymax, xmin:xmax]
                         # create a s3 file key
                         filename = (
                             datetime.datetime.utcnow().strftime("%Y%m%d-%H%M%S.%f")
                             + ".jpg"
                         )
-                        _, jpg_data = cv2.imencode(".jpg", person)
+                        _, jpg_data = cv2.imencode(".jpg", face)
                         key = "incoming/{}".format(filename)
                         res = s3.put_object(
                             ACL="public-read",
@@ -163,7 +156,14 @@ def infinite_infer_run():
                             topic=iot_topic,
                             payload="Error in s3 put lambda: {}".format(ex),
                         )
-
+            # Get the detected faces and probabilities
+            for obj in parsed_inference_results[model_type]:
+                if obj["prob"] > detection_threshold:
+                    # Add bounding boxes to full resolution frame
+                    xmin = int(xscale * obj["xmin"])
+                    ymin = int(yscale * obj["ymin"])
+                    xmax = int(xscale * obj["xmax"])
+                    ymax = int(yscale * obj["ymax"])
                     # See https://docs.opencv.org/3.4.1/d6/d6e/group__imgproc__draw.html
                     # for more information about the cv2.rectangle method.
                     # Method signature: image, point1, point2, color, and tickness.
